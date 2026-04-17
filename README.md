@@ -5,6 +5,7 @@ Flask + HTMX quant-research assistant that is beginner-usable and configurable f
 ## What this includes
 - Suggest markets first, then require explicit user selection (no auto-add).
 - OpenAI deep research for selected markets with graceful fallback mode.
+- Polymarket integration using the local API contract in `API-KEY-DOCS.md` (Gamma/Data/CLOB + auth header support).
 - Suggested pick + confidence + risk output for each selected market.
 - Daily AI research job.
 - Pre-close monitoring job every N hours (default 5h) inside a close window (default 24h).
@@ -55,6 +56,8 @@ Open: `http://<server-ip>:5000`
 - `DB_PATH` (default `achenium.db`)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SENDER`, `REPORT_RECIPIENT`
 - `HOST`, `PORT`, `DEBUG`
+- `POLYMARKET_TIMEOUT_SECONDS` (default `10`)
+- `POLY_ADDRESS`, `POLY_API_KEY`, `POLY_API_SECRET`, `POLY_PASSPHRASE` (required for authenticated CLOB trading endpoints)
 
 ## Scheduler notes
 - Scheduler: `APScheduler` (`BackgroundScheduler`), started in-process with Flask startup.
