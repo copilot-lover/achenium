@@ -35,4 +35,11 @@ class Settings:
     max_selected_markets: int = int(os.getenv("MAX_SELECTED_MARKETS", "8"))
 
 
+    polymarket_timeout_seconds: int = int(os.getenv("POLYMARKET_TIMEOUT_SECONDS", "10"))
+    poly_address: str | None = os.getenv("POLY_ADDRESS")
+    poly_api_key: str | None = os.getenv("POLY_API_KEY")
+    poly_api_secret: str | None = os.getenv("POLY_API_SECRET")
+    poly_passphrase: str | None = os.getenv("POLY_PASSPHRASE")
+
+
 settings = Settings()

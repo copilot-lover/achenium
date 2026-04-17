@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from config import settings
 from services.openai_service import ResearchOutput, deep_research_for_market
+from services.polymarket import fetch_suggested_markets
 from services.storage import add_trade, save_report
 
 DEFAULT_MARKETS = ["SPY", "QQQ", "TLT", "GLD", "BTC-USD", "ETH-USD", "EURUSD", "CL=F"]
@@ -14,7 +15,11 @@ _MARKET_PATTERN = re.compile(r"^[A-Z0-9=\-\.]{2,15}$")
 
 
 def suggest_markets(style: str) -> list[dict]:
-    """Return ranked suggestions with beginner-friendly rationale."""
+    """Return ranked suggestions with Polymarket-first behavior and safe fallback."""
+    live_markets = fetch_suggested_markets(style=style, limit=settings.max_selected_markets)
+    if live_markets:
+        return live_markets
+
     ranked = []
     for idx, market in enumerate(DEFAULT_MARKETS, start=1):
         ranked.append(
