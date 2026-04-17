@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="card">
+  <h2>1) Suggest markets</h2>
+  <form hx-post="/suggestions" hx-target="#suggestions" hx-swap="innerHTML">
+    <label>Style
+      <select name="style">
+        <option value="balanced">Balanced</option>
+        <option value="trend">Trend Following</option>
+        <option value="mean_reversion">Mean Reversion</option>
+      </select>
+    </label>
+    <button type="submit">Get AI Market Suggestions</button>
+  </form>
+</section>
+
+<section id="suggestions" class="card muted">
+  Suggestions will appear here.
+</section>
+
+<section id="reports" class="card muted">
+  Deep research reports will appear here.
+</section>
+{% endblock %}

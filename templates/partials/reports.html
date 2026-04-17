@@ -1,0 +1,12 @@
+<h2>3) Deep research + suggested picks</h2>
+{% for out in outputs %}
+<article class="report">
+  <h3>{{ out.market }}</h3>
+  <p><strong>Beginner summary:</strong> {{ out.beginner_summary }}</p>
+  <p><strong>Quant deep dive:</strong> {{ out.quant_deep_dive }}</p>
+  <p><strong>Suggested pick:</strong> {{ out.suggested_pick }}</p>
+  <p><strong>Confidence:</strong> {{ out.confidence }}</p>
+  <p><strong>Risks:</strong> {{ out.risks }}</p>
+</article>
+{% endfor %}
+<p class="note">Trades are tracked and pre-close checks run every configured interval (default 5h) within 24h of close.</p>
