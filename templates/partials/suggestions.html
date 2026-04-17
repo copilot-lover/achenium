@@ -1,0 +1,32 @@
+<h2>2) Pick markets (no auto-add)</h2>
+<form hx-post="/research" hx-target="#reports" hx-swap="innerHTML">
+  <div class="grid">
+    {% for item in markets %}
+    <label class="market-card">
+      <input type="checkbox" name="selected_markets" value="{{ item.market }}">
+      <strong>{{ item.market }}</strong>
+      <span>Score: {{ item.score }}</span>
+      <small>{{ item.rationale }}</small>
+    </label>
+    {% endfor %}
+  </div>
+
+  <div class="row">
+    <label>Risk Profile
+      <select name="risk_profile">
+        <option value="conservative">Conservative</option>
+        <option value="moderate" selected>Moderate</option>
+        <option value="aggressive">Aggressive</option>
+      </select>
+    </label>
+    <label>Horizon
+      <select name="horizon">
+        <option value="intraday">Intraday</option>
+        <option value="swing" selected>Swing</option>
+        <option value="position">Position</option>
+      </select>
+    </label>
+  </div>
+
+  <button type="submit">Run Deep Research</button>
+</form>
