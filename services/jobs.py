@@ -1,5 +1,8 @@
+"""Background scheduler jobs for research refreshes and daily digest."""
+
 from __future__ import annotations
 
+import logging
 import smtplib
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
@@ -13,34 +16,62 @@ from config import settings
 from services.research import run_deep_research
 from services.storage import get_open_trades, get_reports_since, save_report
 
+logger = logging.getLogger(__name__)
+
 scheduler: BackgroundScheduler | None = None
 
 
 def start_scheduler() -> None:
+    """Start local in-process APScheduler instance."""
     global scheduler
     if scheduler:
         return
 
     scheduler = BackgroundScheduler(timezone="UTC")
     scheduler.add_job(
-        daily_research_job,
+        safe_daily_research_job,
         CronTrigger(hour=settings.daily_research_hour_utc, minute=0),
         id="daily_research",
         replace_existing=True,
     )
     scheduler.add_job(
-        preclose_monitor_job,
+        safe_preclose_monitor_job,
         IntervalTrigger(hours=settings.pre_close_check_interval_hours),
         id="preclose_monitor",
         replace_existing=True,
     )
     scheduler.add_job(
-        send_daily_digest_job,
+        safe_send_daily_digest_job,
         CronTrigger(hour=(settings.daily_research_hour_utc + 1) % 24, minute=0),
         id="daily_digest",
         replace_existing=True,
     )
     scheduler.start()
+    logger.info("APScheduler started (in-process). Jobs are not persisted across restarts.")
+
+
+def safe_daily_research_job() -> None:
+    try:
+        daily_research_job()
+    except Exception as exc:
+        logger.exception("daily_research_job failed: %s", exc)
+        save_report("job_error", {"job": "daily_research", "error": str(exc)})
+
+
+def safe_preclose_monitor_job() -> None:
+    try:
+        preclose_monitor_job()
+    except Exception as exc:
+        logger.exception("preclose_monitor_job failed: %s", exc)
+        save_report("job_error", {"job": "preclose_monitor", "error": str(exc)})
+
+
+def safe_send_daily_digest_job() -> None:
+    try:
+        send_daily_digest_job()
+    except Exception as exc:
+        logger.exception("send_daily_digest_job failed: %s", exc)
+        save_report("job_error", {"job": "daily_digest", "error": str(exc)})
 
 
 def daily_research_job() -> None:
@@ -79,7 +110,8 @@ def send_daily_digest_job() -> None:
     reports = get_reports_since(since)
     body = _render_digest(reports)
 
-    save_report("daily_digest", {"sent": bool(_send_email(body)), "report_count": len(reports)})
+    sent = _send_email(body)
+    save_report("daily_digest", {"sent": sent, "report_count": len(reports)})
 
 
 def _render_digest(reports: list[dict]) -> str:
@@ -91,6 +123,7 @@ def _render_digest(reports: list[dict]) -> str:
 
 def _send_email(body: str) -> bool:
     if not (settings.smtp_host and settings.report_recipient and settings.smtp_user and settings.smtp_password):
+        logger.warning("SMTP not configured. Daily digest generated but not emailed.")
         return False
 
     msg = MIMEMultipart()
@@ -99,7 +132,7 @@ def _send_email(body: str) -> bool:
     msg["Subject"] = "Achenium Daily AI Digest"
     msg.attach(MIMEText(body, "plain"))
 
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as server:
         server.starttls()
         server.login(settings.smtp_user, settings.smtp_password)
         server.send_message(msg)
