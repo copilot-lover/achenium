@@ -69,6 +69,8 @@ Open: `http://<server-ip>:5000`
 - Schema is auto-initialized at startup by `init_db()` for tables:
   - `trades`
   - `reports`
+- A lightweight migration directory exists at `migrations/` with `0001_initial_schema.sql` for preparatory/manual use.
+- Migration execution is not wired into app startup yet.
 - To reset the DB, stop app and remove the database file configured by `DB_PATH`.
 
 ## Error handling UX
