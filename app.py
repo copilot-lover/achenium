@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from flask import Flask, render_template, request
 
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = settings.secret_key
+_scheduler_started = False
 
 
 @app.route("/", methods=["GET"])
@@ -79,8 +81,20 @@ def health():
 
 
 def create_app() -> Flask:
+    global _scheduler_started
+
     init_db()
-    start_scheduler()
+
+    is_werkzeug_reloader_parent = settings.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true"
+    should_start_scheduler = not _scheduler_started and not is_werkzeug_reloader_parent
+    scheduler_running = bool(scheduler and scheduler.running)
+
+    if should_start_scheduler and not scheduler_running:
+        start_scheduler()
+        _scheduler_started = True
+    elif scheduler_running:
+        _scheduler_started = True
+
     return app
 
 
