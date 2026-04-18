@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
 {% block content %}
-<section class="card">
-  <h2>1) Suggest markets</h2>
-  <form hx-post="/suggestions" hx-target="#suggestions" hx-swap="innerHTML">
-    <label>Style
+<section class="card card-elevated">
+  <div class="card-heading">
+    <h2>1) Suggest markets</h2>
+    <p class="note">Choose a strategy profile and request AI-generated market ideas.</p>
+  </div>
+
+  <form class="stack-md" hx-post="/suggestions" hx-target="#suggestions" hx-swap="innerHTML">
+    <label class="field">
+      <span>Style</span>
       <select name="style">
         <option value="balanced">Balanced</option>
         <option value="trend">Trend Following</option>
@@ -14,11 +19,19 @@
   </form>
 </section>
 
-<section id="suggestions" class="card muted">
-  Suggestions will appear here.
+<section id="suggestions" class="card muted stack-sm" aria-live="polite">
+  <div class="card-heading">
+    <h2>2) Suggestions queue</h2>
+    <p class="note">Suggested markets will stream in here once generation finishes.</p>
+  </div>
+  <p class="placeholder">Suggestions will appear here.</p>
 </section>
 
-<section id="reports" class="card muted">
-  Deep research reports will appear here.
+<section id="reports" class="card muted stack-sm" aria-live="polite">
+  <div class="card-heading">
+    <h2>3) Research reports</h2>
+    <p class="note">Deep research summaries and supporting details will populate here.</p>
+  </div>
+  <p class="placeholder">Deep research reports will appear here.</p>
 </section>
 {% endblock %}
