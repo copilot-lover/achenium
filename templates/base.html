@@ -8,9 +8,16 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
-  <main class="container">
-    <h1>Achenium Quant Research (Beginner Friendly)</h1>
+  <main class="page-shell container">
+    <header class="page-header">
+      <p class="eyebrow">Achenium • Quant Research Workspace</p>
+      <h1>Achenium Quant Research</h1>
+      <p class="lede">Generate candidate prediction markets and stage research workflows from a single, beginner-friendly dashboard.</p>
+    </header>
+
     {% block content %}{% endblock %}
   </main>
+
+  {% include 'partials/widget.html' %}
 </body>
 </html>
