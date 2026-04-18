@@ -64,6 +64,78 @@ Open: `http://<server-ip>:5000`
 - This scheduler is suitable for local/dev and simple single-process deployment.
 - Scheduled job definitions are re-created on startup and are **not persisted** across app restarts.
 
+## Operations runbook
+
+### Verify scheduler status
+1. Start the app (`python app.py`) and verify the scheduler starts at boot.
+2. Check runtime health:
+   ```bash
+   curl -s http://127.0.0.1:5000/health | python -m json.tool
+   ```
+3. Confirm these fields:
+   - `"status": "ok"`
+   - `"scheduler_running": true`
+   - `"scheduler_type": "APScheduler BackgroundScheduler (in-process)"`
+4. Verify startup logs include:
+   - `APScheduler started (in-process). Jobs are not persisted across restarts.`
+
+If `scheduler_running` is `false`, restart the process and re-check `/health`. Because jobs are in-process, scheduler state resets on each app restart.
+
+### Inspect report storage
+Reports are persisted in SQLite at `DB_PATH` (default `achenium.db`) in table `reports` (`created_at`, `report_type`, `payload` JSON text).
+
+Quick inspection commands:
+
+```bash
+# Show newest 20 reports
+sqlite3 "${DB_PATH:-achenium.db}" \
+  "SELECT id, created_at, report_type, substr(payload,1,160) FROM reports ORDER BY id DESC LIMIT 20;"
+
+# Count report volume by type
+sqlite3 "${DB_PATH:-achenium.db}" \
+  "SELECT report_type, COUNT(*) FROM reports GROUP BY report_type ORDER BY COUNT(*) DESC;"
+
+# Review job failures only
+sqlite3 "${DB_PATH:-achenium.db}" \
+  "SELECT created_at, payload FROM reports WHERE report_type='job_error' ORDER BY created_at DESC LIMIT 20;"
+```
+
+### Recover from failed jobs
+`safe_*` scheduler wrappers catch exceptions and write `report_type=job_error` entries instead of crashing the scheduler process.
+
+Recovery workflow:
+1. Identify failing job(s) from `job_error` rows in `reports`.
+2. Fix root cause (common examples):
+   - Missing API credentials in environment.
+   - SMTP misconfiguration for digest delivery.
+   - Temporary network/provider failures.
+3. Restart the application so APScheduler re-registers all jobs.
+4. Validate with `/health` (`scheduler_running: true`).
+5. Confirm new `job_status`, `preclose_monitor`, or `daily_digest` rows appear and no new `job_error` rows are created.
+
+Notes:
+- `daily_research` runs at `DAILY_RESEARCH_HOUR_UTC`.
+- `preclose_monitor` runs every `PRE_CLOSE_CHECK_INTERVAL_HOURS`.
+- `daily_digest` runs one hour after `DAILY_RESEARCH_HOUR_UTC`.
+
+### Rotate API credentials safely
+Use a staged rotation to avoid downtime for OpenAI, Polymarket, and SMTP credentials:
+
+1. **Create new credentials** in the provider console(s); keep old credentials active during overlap.
+2. **Update runtime secret source** (for example: `.env`, systemd env file, container secret manager):
+   - `OPENAI_API_KEY`
+   - `POLY_API_KEY`, `POLY_API_SECRET`, `POLY_PASSPHRASE`, `POLY_ADDRESS`
+   - `SMTP_USER`, `SMTP_PASSWORD`
+3. **Restart app process** to load new environment variables.
+4. **Smoke test immediately**:
+   - `GET /health`
+   - Trigger a manual research request in UI
+   - Confirm no new `job_error` records in SQLite
+5. **Revoke old credentials** only after successful validation.
+6. **Audit and cleanup**:
+   - Ensure rotated secrets are not committed to git.
+   - Remove obsolete secrets from local shell history or temporary files.
+
 ## SQLite notes
 - Persistence uses raw SQL via `sqlite3` (no ORM yet).
 - Schema is auto-initialized at startup by `init_db()` for tables:
