@@ -1,0 +1,4 @@
+title = "achenium gitleaks config"
+
+[extend]
+useDefault = true
