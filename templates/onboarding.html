@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="card onboarding-card" id="onboarding-form-card">
+  <h2>Welcome to Achenium setup</h2>
+  <p class="muted-text">Complete this one-time onboarding to save runtime configuration values.</p>
+
+  <form id="onboarding-form" novalidate>
+    <fieldset class="onboarding-section">
+      <legend>AI provider / API</legend>
+
+      <label for="ai_provider">Provider <span class="required">Required</span></label>
+      <select id="ai_provider" name="ai_provider" required aria-describedby="ai-provider-hint">
+        <option value="">Select provider…</option>
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic</option>
+        <option value="google">Google Gemini</option>
+        <option value="azure_openai">Azure OpenAI</option>
+      </select>
+      <small id="ai-provider-hint" class="hint">Choose the AI backend used for market suggestions and deep research.</small>
+
+      <label for="openai_api_key">openai_api_key <span class="required">Required when Provider is OpenAI</span></label>
+      <input
+        id="openai_api_key"
+        name="openai_api_key"
+        type="password"
+        autocomplete="off"
+        placeholder="sk-..."
+        data-required-for="openai"
+        aria-describedby="openai-api-key-hint"
+      />
+      <small id="openai-api-key-hint" class="hint">Stored as a secret value. Leave blank for non-OpenAI providers.</small>
+
+      <label for="openai_model">openai_model <span class="optional">Optional</span></label>
+      <input id="openai_model" name="openai_model" type="text" placeholder="gpt-4.1" />
+    </fieldset>
+
+    <fieldset class="onboarding-section">
+      <legend>Update schedule</legend>
+
+      <label for="daily_research_hour_utc">daily_research_hour_utc <span class="required">Required</span></label>
+      <input id="daily_research_hour_utc" name="daily_research_hour_utc" type="number" min="0" max="23" required />
+      <small class="hint">UTC hour (0–23) for daily refresh jobs.</small>
+
+      <label for="pre_close_check_interval_hours">pre_close_check_interval_hours <span class="required">Required</span></label>
+      <input
+        id="pre_close_check_interval_hours"
+        name="pre_close_check_interval_hours"
+        type="number"
+        min="1"
+        max="24"
+        required
+      />
+      <small class="hint">How often to run pre-close market checks.</small>
+
+      <label for="pre_close_window_hours">pre_close_window_hours <span class="optional">Optional</span></label>
+      <input id="pre_close_window_hours" name="pre_close_window_hours" type="number" min="1" max="72" placeholder="24" />
+    </fieldset>
+
+    <fieldset class="onboarding-section">
+      <legend>Notifications</legend>
+
+      <label for="report_recipient">report_recipient <span class="required">Required for email delivery</span></label>
+      <input
+        id="report_recipient"
+        name="report_recipient"
+        type="email"
+        placeholder="analyst@example.com"
+        aria-describedby="recipient-hint"
+      />
+      <small id="recipient-hint" class="hint">Target address for daily digest reports. Leave blank to disable email delivery.</small>
+
+      <label for="smtp_sender">smtp_sender <span class="optional">Optional</span></label>
+      <input id="smtp_sender" name="smtp_sender" type="email" placeholder="noreply@local" />
+    </fieldset>
+
+    <p id="form-error" class="form-error" role="alert" aria-live="polite"></p>
+    <button type="submit">Complete onboarding</button>
+  </form>
+</section>
+
+<section class="card onboarding-card hidden" id="onboarding-complete" aria-live="polite">
+  <h2>Setup complete</h2>
+  <p>Your onboarding values were validated and are ready to persist.</p>
+  <a class="button-link" href="/">Return to dashboard</a>
+</section>
+
+<style>
+  .onboarding-card {
+    max-width: 760px;
+  }
+
+  .onboarding-section {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin: 1rem 0;
+    padding: 1rem;
+  }
+
+  .onboarding-section legend {
+    font-weight: 700;
+    padding: 0 0.4rem;
+  }
+
+  .onboarding-section label {
+    display: block;
+    margin-top: 0.9rem;
+    font-weight: 600;
+  }
+
+  .onboarding-section input,
+  .onboarding-section select {
+    width: 100%;
+    margin-top: 0.35rem;
+  }
+
+  .hint,
+  .muted-text {
+    color: #666;
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.92rem;
+  }
+
+  .required {
+    color: #a02727;
+    font-size: 0.8rem;
+  }
+
+  .optional {
+    color: #444;
+    font-size: 0.8rem;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .form-error {
+    min-height: 1.2rem;
+    color: #a02727;
+    margin: 0.5rem 0;
+  }
+
+  .button-link {
+    display: inline-block;
+    background: #111;
+    color: #fff;
+    text-decoration: none;
+    padding: 0.55rem 0.95rem;
+    border-radius: 8px;
+  }
+</style>
+
+<script>
+  (function () {
+    const form = document.getElementById('onboarding-form');
+    const provider = document.getElementById('ai_provider');
+    const openAiKey = document.getElementById('openai_api_key');
+    const errorEl = document.getElementById('form-error');
+    const formCard = document.getElementById('onboarding-form-card');
+    const completeCard = document.getElementById('onboarding-complete');
+
+    function syncConditionalRequirements() {
+      const needsOpenAiKey = provider.value === 'openai';
+      openAiKey.required = needsOpenAiKey;
+    }
+
+    provider.addEventListener('change', syncConditionalRequirements);
+    syncConditionalRequirements();
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      errorEl.textContent = '';
+
+      if (!form.checkValidity()) {
+        errorEl.textContent = 'Please fill in required fields before continuing.';
+        form.reportValidity();
+        return;
+      }
+
+      formCard.classList.add('hidden');
+      completeCard.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  })();
+</script>
+{% endblock %}

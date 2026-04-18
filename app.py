@@ -25,6 +25,10 @@ app.config["SECRET_KEY"] = settings.secret_key
 def index():
     return render_template("index.html")
 
+@app.route("/onboarding", methods=["GET"])
+def onboarding():
+    return render_template("onboarding.html")
+
 
 @app.route("/suggestions", methods=["POST"])
 def suggestions():
